@@ -6,12 +6,21 @@
 
 void _EEPROM_writeData(int &pos, uint8_t* value, uint8_t size)
 {
-	do
-	{
-		eeprom_write_byte((unsigned char*)pos, *value);
+	while (size--) {
+		uint8_t * const p = (uint8_t * const)pos;
+		uint8_t v = *value;
+		// EEPROM has only ~100,000 write cycles,
+		// so only write bytes that have changed!
+		if (v != eeprom_read_byte(p)) {
+			eeprom_write_byte(p, v);
+			if (eeprom_read_byte(p) != v) {
+				Serial.println(F("Error Write EEPROM"));
+				return;
+			}
+		}
 		pos++;
 		value++;
-	}while(--size);
+	};
 }
 #define EEPROM_WRITE_VAR(pos, value) _EEPROM_writeData(pos, (uint8_t*)&value, sizeof(value))
 void _EEPROM_readData(int &pos, uint8_t* value, uint8_t size)

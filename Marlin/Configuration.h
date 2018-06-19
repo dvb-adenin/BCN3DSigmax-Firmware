@@ -794,14 +794,14 @@ const bool Z_MAX_ENDSTOP_INVERTING = true; // set to true to invert the logic of
 #define DEFAULT_OLD_BED_TEMP	PLA_BED_TEMP;
 
 
-//Rapduch
-//Insert Filament parameters
+//LOAD Filament parameters
 #if BCN3D_PRINTER_SETUP == BCN3D_SIGMA_PRINTER_SIGMA
-	#define BOWDEN_LENGTH 875
+	#define BOWDEN_LENGTH 925
 #endif
 #if BCN3D_PRINTER_SETUP == BCN3D_SIGMA_PRINTER_SIGMAX
-	#define BOWDEN_LENGTH 1050
+	#define BOWDEN_LENGTH 1100
 #endif
+
 #define EXTRUDER_LENGTH 50
 #define INSERT_FAST_SPEED 3600	//max speed 60mm/s
 #define INSERT_SLOW_SPEED 150
