@@ -1739,20 +1739,13 @@ void lcd_fsm_lcd_input_logic(){//We process tasks according to the lcd imputs
 			
 			break;
 			
-			case BUTTON_MAINTENANCE_ZADJUST_BACK:
-			
-			processing_z_set = 255;
-			touchscreen_update();
-			genie.WriteObject(GENIE_OBJ_FORM, FORM_UTILITIES_MAINTENANCE, 0);
-			
-			break;
-			
+			case BUTTON_MAINTENANCE_ZADJUST_BACK:			
 			case BUTTON_MAINTENANCE_ZADJUST_ACCEPT:
-			
+			if(!blocks_queued()){
 			processing_z_set = 255;
 			touchscreen_update();
 			genie.WriteObject(GENIE_OBJ_FORM, FORM_UTILITIES_MAINTENANCE, 0);
-			
+			}
 			break;
 			
 			
@@ -4337,17 +4330,6 @@ void update_screen_printing(){
 		flag_sdprinting_showdata = false;
 		
 	}
-	if(FLAG_thermal_runaway){
-		char buffer[255];
-		sprintf(buffer, "WARNING(88): Temperature not reached by Heater_ID: %d",ID_thermal_runaway);
-		if(!FLAG_thermal_runaway_screen && (screen_printing_pause_form !=screen_printing_pause_form2)){
-			genie.WriteObject(GENIE_OBJ_FORM,FORM_ERROR_SCREEN,0);
-			genie.WriteStr(STRING_ERROR_MESSAGE,buffer);
-			FLAG_thermal_runaway_screen = true;
-			gif_processing_state = PROCESSING_ERROR;
-		}
-		FLAG_thermal_runaway = false;
-	}
 	if(screen_change_nozz1up){
 		char buffer[25];
 		if (target_temperature[0] < HEATER_0_MAXTEMP)
@@ -5177,6 +5159,18 @@ void lcd_animation_handler(){//We process the animations frames
 			log_minutes_lastprint = (int)(log_min_print%60);
 			Config_StoreSettings();
 			cancel_heatup = false;
+			if(FLAG_thermal_runaway){
+				char buffer[80];
+				sprintf(buffer, "ERROR(88): Temperature not reached by Heater_ID: %d",ID_thermal_runaway);
+				if(!FLAG_thermal_runaway_screen && (screen_printing_pause_form !=screen_printing_pause_form2)){
+					display_ChangeForm(FORM_ERROR_SCREEN,0);
+					genie.WriteStr(STRING_ERROR_MESSAGE,buffer);
+					FLAG_thermal_runaway_screen = true;
+					gif_processing_state = PROCESSING_ERROR;
+				}
+				FLAG_thermal_runaway = false;
+				return;
+			}
 			if(saved_print_flag == 1888){
 				genie.WriteObject(GENIE_OBJ_FORM,FORM_SDPRINTING_SAVEJOB_SUCCESS,0);
 				gif_processing_state = PROCESSING_SAVE_PRINT_SUCCESS;
@@ -6352,7 +6346,7 @@ void Z_compensation_coolingdown(void){
 	setTargetHotend0(0);
 	setTargetBed(0);
 	Config_StoreSettings();
-	which_extruder = (extruder_offset[Z_AXIS][RIGHT_EXTRUDER]<0) ? 1:0;
+	which_extruder = (extruder_offset[Z_AXIS][RIGHT_EXTRUDER]<0 ? RIGHT_EXTRUDER:LEFT_EXTRUDER);
 	if(degHotend(which_extruder)>NYLON_TEMP_COOLDOWN_THRESHOLD){
 		//genie.WriteObject(GENIE_OBJ_FORM,FORM_ADJUSTING_TEMPERATURES,0);
 		if(which_extruder == 0)digitalWrite(FAN_PIN, 1);
@@ -6415,7 +6409,7 @@ void Z_compensation_coolingdown(void){
 	#endif
 	plan_buffer_line(current_position[X_AXIS],current_position[Y_AXIS],current_position[Z_AXIS],current_position[E_AXIS],XY_TRAVEL_SPEED*1.5,which_extruder);
 	st_synchronize();
-	sprintf_P(offset_string, PSTR("Install %d %s on the %s hotend"), offset_aprox, ((offset_aprox > 1)?"shims":"shim") , ((extruder_offset[Z_AXIS][RIGHT_EXTRUDER] < 0)?"right":"left"));
+	sprintf(offset_string, "Install %d %s on the %s hotend", offset_aprox, ((offset_aprox > 1)?"shims":"shim") , ((extruder_offset[Z_AXIS][RIGHT_EXTRUDER] < 0)?"right":"left"));
 	Serial.println(offset_string);
 	genie.WriteObject(GENIE_OBJ_FORM,FORM_Z_COMPENSATION_SHUTDOWN,0);
 	genie.WriteStr(STRING_Z_COMPENSATION_SHUTDOWN,offset_string);

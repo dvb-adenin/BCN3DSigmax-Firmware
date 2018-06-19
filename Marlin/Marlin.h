@@ -298,6 +298,12 @@ extern void digipot_i2c_init();
 
 //Rapduch
 extern Genie genie;
+
+#define display_ButtonState(x,y)	{if(x>=300){genie.WriteObject(GENIE_OBJ_4DBUTTON, constrain(x-300,0,255), y);}else{genie.WriteObject(GENIE_OBJ_USERBUTTON, constrain(x,0,255), y);}}
+#define display_ChangeForm(x,y)		(genie.WriteObject(GENIE_OBJ_FORM, x, y))
+#define display_SetFrame(x,y)		(genie.WriteObject(GENIE_OBJ_VIDEO, x, y))
+#define ERROR_SCREEN_WARNING		if(gif_processing_state == PROCESSING_ERROR){LCD_FSM_input_buton_flag = -1; lcd_busy = false; return;}
+
 void touchscreen_update();
 extern bool flag_ending_gcode;
 extern uint16_t filepointer;

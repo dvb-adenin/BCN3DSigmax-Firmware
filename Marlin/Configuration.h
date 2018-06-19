@@ -27,10 +27,10 @@
 //This is the version declaration for Sigmax, v followed by '-' first indicate the hardware, it must have 2 ditgits. Then the '-' and then the firmware, it has to have 3 digits separets by '.'. -> This is useful to
 //get the hw and fw version to Cura-BCN3D and update the new firmware
 
-#define VERSION_STRING  "02-1.2.9"
-//#define BUILD_DATE  "|M01.15"
-#define VERSION_NUMBER  129
-#define BUILD_DATE  " "
+#define VERSION_STRING  "02-1.2.10RC"
+#define BUILD_DATE  "|M06.20"
+#define VERSION_NUMBER  130
+//#define BUILD_DATE  " "
 #define UI_SerialID  "At Bottom Sticker"
 //#define DEFAULT_QUICK_GUIDE  0;
 // User-specified version info of this build to display in [Pronterface, etc] terminal window during
