@@ -1902,7 +1902,7 @@ static void run_z_probe() {
 	// move back up slowly to find bed
 	
 	zPosition -= home_retract_mm(Z_AXIS) * 2;
-	plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], zPosition, current_position[E_AXIS], 4, active_extruder);
+	plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], zPosition, current_position[E_AXIS], 2, active_extruder);
 	st_synchronize();
 
 	current_position[Z_AXIS] = st_get_position_mm(Z_AXIS);
