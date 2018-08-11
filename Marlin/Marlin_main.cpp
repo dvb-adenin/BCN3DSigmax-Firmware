@@ -4800,8 +4800,8 @@ inline void gcode_M34(){
 			Serial.println(current_position[Y_AXIS]);
 			waiting_temps = false;
 			saved_print_smartpurge_flag = true;
-			if(degTargetHotend[0]>145)Flag_hotend0_relative_temp = true;
-			if(degTargetHotend[1]>145)Flag_hotend1_relative_temp = true;
+			if(degTargetHotend(0)>145)Flag_hotend0_relative_temp = true;
+			if(degTargetHotend(1)>145)Flag_hotend1_relative_temp = true;
 			genie.WriteObject(GENIE_OBJ_USERBUTTON,BUTTON_SDPRINTING_PAUSE,1);
 		}
 		#endif //SDSUPPORT
@@ -5482,8 +5482,8 @@ inline void gcode_M109(){
 		#endif //TEMP_RESIDENCY_TIME
 	}
 	#endif //TEMP_RESIDENCY_TIME
-	if(degTargetHotend[0]>145)Flag_hotend0_relative_temp = true;
-	if(degTargetHotend[1]>145)Flag_hotend1_relative_temp = true;
+	if(degTargetHotend(0)>145)Flag_hotend0_relative_temp = true;
+	if(degTargetHotend(1)>145)Flag_hotend1_relative_temp = true;
 	waiting_temps = false;
 	SERIAL_PROTOCOLLNPGM("Extruder Heated");
 	LCD_MESSAGEPGM(MSG_HEATING_COMPLETE);
