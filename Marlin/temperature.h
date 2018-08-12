@@ -27,7 +27,7 @@
   #include "stepper.h"
 #endif
 
-#define HOTEND_LOOP() for (int8_t e = 0; e < EXTRUDERS; e++)
+//#define HOTEND_LOOP() for (int8_t e = 0; e < EXTRUDERS; e++)
 
 // public functions
 void tp_init();  //initialize the heating

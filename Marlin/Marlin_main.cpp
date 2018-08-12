@@ -921,90 +921,89 @@ void HeaterCooldownInactivity(bool switchOnOff)
 
 #if TEMP_0_PIN || TEMP_BED_PIN
 
-void print_heater_state(const float &c, const float &t,
+
 #if ENABLED(SHOW_TEMP_ADC_VALUES)
-const float r,
+void print_heater_state(const float &c, const float &t, const float r, const int8_t e=-2)
+#else
+void print_heater_state(const float &c, const float &t, const int8_t e=-2)
 #endif //#if ENABLED(SHOW_TEMP_ADC_VALUES)
-const int8_t e=-2
-)
 {
-	#if !(TEMP_BED_PIN && TEMP_0_PIN) && EXTRUDERS <= 1
+#if !(TEMP_BED_PIN && TEMP_0_PIN) && EXTRUDERS <= 1
 	UNUSED(e);
-	#endif //#if !(TEMP_BED_PIN && TEMP_0_PIN) && EXTRUDERS <= 1
+#endif //#if !(TEMP_BED_PIN && TEMP_0_PIN) && EXTRUDERS <= 1
 
 	SERIAL_PROTOCOLCHAR(' ');
-	SERIAL_PROTOCOLCHAR(
-	#if TEMP_BED_PIN && TEMP_0_PIN
-	e == -1 ? 'B' : 'T'
-	#elif TEMP_0_PIN
-	'T'
-	#else //#elif TEMP_0_PIN
-	'B'
-	#endif //#elif TEMP_0_PIN
-	);
 
-	#if EXTRUDERS > 1
+#if TEMP_BED_PIN && TEMP_0_PIN
+	SERIAL_PROTOCOLCHAR( e == -1 ? 'B' : 'T' );
+#elif TEMP_0_PIN
+	SERIAL_PROTOCOLCHAR( 'T' );
+#else //#elif TEMP_0_PIN
+	SERIAL_PROTOCOLCHAR( 'B' );
+#endif //#elif TEMP_0_PIN
+
+#if EXTRUDERS > 1
 	if(e >= 0)
 	{
 		SERIAL_PROTOCOLCHAR('0' + e);
 	}
-	#endif //#if EXTRUDERS > 1
+#endif //#if EXTRUDERS > 1
 
 	SERIAL_PROTOCOLCHAR(':');
 	SERIAL_PROTOCOL(c);
 	SERIAL_PROTOCOLPAIR(" /" , t);
 
-	#if ENABLED(SHOW_TEMP_ADC_VALUES)
+#if ENABLED(SHOW_TEMP_ADC_VALUES)
 	SERIAL_PROTOCOLPAIR(" (", r / OVERSAMPLENR);
 	SERIAL_PROTOCOLCHAR(')');
-	#endif //#if ENABLED(SHOW_TEMP_ADC_VALUES)
+#endif //#if ENABLED(SHOW_TEMP_ADC_VALUES)
 }
 
 void print_heaterstates()
 {
-	#if TEMP_0_PIN
-		print_heater_state(degHotend(tmp_extruder), degTargetHotend(tmp_extruder)
-			#if ENABLED(SHOW_TEMP_ADC_VALUES)
-			, rawHotendTemp(tmp_extruder)
-			#endif //#if ENABLED(SHOW_TEMP_ADC_VALUES)
-		);
-	#endif //#if TEMP_0_PIN
+#if TEMP_0_PIN
+	#if ENABLED(SHOW_TEMP_ADC_VALUES)
+	print_heater_state(degHotend(tmp_extruder), degTargetHotend(tmp_extruder), rawHotendTemp(tmp_extruder));
+	#else
+	print_heater_state(degHotend(tmp_extruder), degTargetHotend(tmp_extruder));
+	#endif //#if ENABLED(SHOW_TEMP_ADC_VALUES)
+#endif //#if TEMP_0_PIN
 
-	#if TEMP_BED_PIN
-		print_heater_state(degBed(), degTargetBed(),
-			#if ENABLED(SHOW_TEMP_ADC_VALUES)
-			rawBedTemp(),
-			#endif //#if ENABLED(SHOW_TEMP_ADC_VALUES)
-			-1 // BED
-		);
-	#endif //#if TEMP_BED_PIN
+#if TEMP_BED_PIN
+	#if ENABLED(SHOW_TEMP_ADC_VALUES)
+	print_heater_state(degBed(), degTargetBed(), rawBedTemp(), -1 /* BED*/);
+	#else
+	print_heater_state(degBed(), degTargetBed(), -1 /* BED*/);
+	#endif //#if ENABLED(SHOW_TEMP_ADC_VALUES)
+#endif //#if TEMP_BED_PIN
 
-	#if EXTRUDERS > 1
-		HOTEND_LOOP() print_heater_state(degHotend(e), degTargetHotend(e),
-			#if ENABLED(SHOW_TEMP_ADC_VALUES)
-			rawHotendTemp(e),
-			#endif //#if ENABLED(SHOW_TEMP_ADC_VALUES)
-			e
-		);
-	#endif //#if EXTRUDERS > 1
+#if EXTRUDERS > 1
+	for (int8_t e = 0; e < EXTRUDERS; e++)
+	{
+		#if ENABLED(SHOW_TEMP_ADC_VALUES)
+		print_heater_state(degHotend(e), degTargetHotend(e), rawHotendTemp(e), e);
+		#else
+		print_heater_state(degHotend(e), degTargetHotend(e), e);
+		#endif //#if ENABLED(SHOW_TEMP_ADC_VALUES)
+	}
+#endif //#if EXTRUDERS > 1
 
-		SERIAL_PROTOCOLPGM(" @:");
+	SERIAL_PROTOCOLPGM(" @:");
 	SERIAL_PROTOCOL(getHeaterPower(tmp_extruder));
 
-	#if HAS_TEMP_BED
+#if HAS_TEMP_BED
 	SERIAL_PROTOCOLPGM(" B@:");
 	SERIAL_PROTOCOL(getHeaterPower(-1));
-	#endif //#if HAS_TEMP_BED
+#endif //#if HAS_TEMP_BED
 
-	#if EXTRUDERS > 1
-	HOTEND_LOOP()
+#if EXTRUDERS > 1
+	for (int8_t e = 0; e < EXTRUDERS; e++)
 	{
 		SERIAL_PROTOCOLPAIR(" @", e);
 		SERIAL_PROTOCOLCHAR(':');
 		SERIAL_PROTOCOL(getHeaterPower(e));
 	}
-	#endif //#if EXTRUDERS > 1
-
+#endif //#if EXTRUDERS > 1
 }
 #endif //#if TEMP_0_PIN || TEMP_BED_PIN
 
