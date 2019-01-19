@@ -233,6 +233,9 @@ M999 - Restart after being stopped by error
 #ifdef SDSUPPORT
 CardReader card;
 Listfiles listsd;
+bool file_check_is_ok = false;
+uint32_t file_check_startindex;
+unsigned char file_check_state = 0;
 #endif
 int UI_SerialID0 = 0;
 long UI_SerialID1 = 0;
@@ -1594,6 +1597,67 @@ void get_command()
 		}
 	}
 	#ifdef SDSUPPORT
+#define 	FILE_CHECK_IDLE			0
+#define 	FILE_CHECK_START		1
+#define 	FILE_CHECK_RUNNING		2
+
+    switch(file_check_state)
+    {
+	case FILE_CHECK_IDLE:
+	    break;
+	case FILE_CHECK_START:
+	    file_check_is_ok = false;
+	    file_check_startindex = card.getIndex();
+	    Serial.println("adenin: Start Filecheck.");
+	    file_check_state = FILE_CHECK_RUNNING;
+	    // do not break here! fall through to the next state (FILE_CHECK_RUNNING)!
+	case FILE_CHECK_RUNNING:
+	    if(card.sdprinting && !card.sdispaused)
+	    {
+		for(uint16_t cnt = 0; cnt < 512; cnt++)
+		{
+		    int16_t n=card.get();
+
+		    if(n < 0)
+		    {
+			file_check_state = FILE_CHECK_IDLE;
+			if(card.eof())
+			{
+			    file_check_is_ok = true;
+			    card.setIndex(file_check_startindex);
+			    Serial.println("adenin: Filecheck ok");
+			    return;
+			}
+			else
+			{
+			    file_check_is_ok = false;
+			    card.setIndex(0);
+			    Serial.println("adenin: Error Filecheck.");
+			    display_ChangeForm( FORM_ERROR_SCREEN, 0);
+			    display.WriteStr(STRING_ERROR_MESSAGE,"ERROR: Can't read File");//Printing form
+			    gif_processing_state = PROCESSING_ERROR;
+			    card.printingHasFinished();
+			    SERIAL_PROTOCOLLNPGM(MSG_SD_NOT_PRINTING);
+			    screen_sdcard = true;
+			    return;
+			}
+		    }
+		}
+	    }
+	    else
+	    {
+		if(!card.sdispaused)
+		{
+		    Serial.println("adenin: file check canceled");
+		    file_check_state = FILE_CHECK_IDLE;
+		}
+	    }
+	    break;
+	default:
+	    file_check_state = FILE_CHECK_IDLE;
+	    break;
+    }
+
 	if(!card.sdprinting || serial_count!=0){ //Detects if printer is paused
 		#ifdef SIGMA_TOUCH_SCREEN
 		
@@ -1627,7 +1691,7 @@ void get_command()
 
 static bool stop_buffering=false;
 if(buflen==0) stop_buffering=false;
-while( !card.eof()  && buflen < BUFSIZE && !stop_buffering) {
+while( !card.eof()  && buflen < BUFSIZE && !stop_buffering && (file_check_state == FILE_CHECK_IDLE) && file_check_is_ok) {
 	int16_t n=card.get();
 	serial_char = (char)n;
 	if(serial_char == '\n' ||
@@ -4734,7 +4798,7 @@ inline void gcode_M23(){
 }
 inline void gcode_M24(){
 	#ifdef SDSUPPORT
-	
+	file_check_state = FILE_CHECK_START;
 	card.startFileprint();
 	starttime=millis();
 	#ifdef ENABLE_CURA_COUNTDOWN_TIMER
@@ -4896,6 +4960,7 @@ inline void gcode_M32(){
 		if(code_seen('S'))
 		if(strchr_pointer<namestartpos) //only if "S" is occuring _before_ the filename
 		card.setIndex(code_value_long());
+		file_check_state = FILE_CHECK_START;
 		card.startFileprint();
 		if(!call_procedure)
 		starttime=millis(); //procedure calls count as normal print time.
