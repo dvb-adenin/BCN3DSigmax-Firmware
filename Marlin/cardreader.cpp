@@ -515,13 +515,29 @@ void CardReader::removeFile(char* name)
 
 void CardReader::getStatus()
 {
-	if(cardOK){
-		SERIAL_PROTOCOLPGM(MSG_SD_PRINTING_BYTE);
-		SERIAL_PROTOCOL(sdpos);
-		SERIAL_PROTOCOLPGM("/");
-		SERIAL_PROTOCOLLN(filesize);
+	if(cardOK)
+	{
+		if(sdprinting)
+		{
+			SERIAL_PROTOCOLPGM(MSG_SD_PRINTING_BYTE);
+			SERIAL_PROTOCOL(sdpos);
+			SERIAL_PROTOCOLPGM("/");
+			SERIAL_PROTOCOLLN(filesize);
+		}
+		else
+		{
+			if(sdispaused)
+			{
+				SERIAL_PROTOCOLLNPGM("PAUSE");
+			}
+			else
+			{
+				SERIAL_PROTOCOLLNPGM(MSG_SD_NOT_PRINTING);
+			}
+		}
 	}
-	else{
+	else
+	{
 		SERIAL_PROTOCOLLNPGM(MSG_SD_NOT_PRINTING);
 	}
 }
@@ -603,6 +619,8 @@ void CardReader::closefile(bool store_location)
 {
 	file.sync();
 	file.close();
+	sdpos = 0;
+	filesize = 0;
 	saving = false;
 	logging = false;
 	
@@ -751,13 +769,27 @@ void CardReader::printingHasFinished()
 
 uint32_t CardReader::getFileSize()
 {
-	return filesize;
+	if(isFileOpen())
+		return filesize;
+	else
+	{
+		if(filesize)						//adenin: Es wird erwartet, das filesize zu diesem Zeitpunkt 0 ist!
+			SERIAL_PROTOCOLLN("-->AE2");	//adenin error
+		return 0;
+	}
 }
 
 
 uint32_t CardReader::getSdPosition()
 {
-	return sdpos;
+	if(isFileOpen())
+		return sdpos;
+	else
+	{
+		if(sdpos)						//adenin: Es wird erwartet, das sdpos zu diesem Zeitpunkt 0 ist!
+			SERIAL_PROTOCOLLN("-->AE1");	//adenin error
+		return 0;
+	}
 }
 
 

@@ -234,6 +234,7 @@ M999 - Restart after being stopped by error
 CardReader card;
 Listfiles listsd;
 bool file_check_is_ok = false;
+unsigned char file_check_wait_M27 = 0;
 uint32_t file_check_startindex;
 unsigned char file_check_state = 0;
 #endif
@@ -384,7 +385,6 @@ uint16_t led_brightness = 255; //0-255
 
 void draw_print_line(int8_t patternid, float y_destination, float layerh);
 void draw_print_line_scrirt(uint8_t axis, float y_destination);
-
 
 float hotend_size_setup[EXTRUDERS] = {BCN3D_NOZZLE_DEFAULT_SIZE
 	#if EXTRUDERS > 1
@@ -870,6 +870,7 @@ void setup()
 	digitalWrite(SDA_PIN, HIGH);
 	digitalWrite(RELAY, LOW);
 	MYSERIAL.begin(BAUDRATE);
+	DEBUGSERIAL.begin(500000);
 
 	SERIAL_PROTOCOLLNPGM(VERSION_STRING);
 	SERIAL_ECHO_START;
@@ -1600,63 +1601,70 @@ void get_command()
 #define 	FILE_CHECK_IDLE			0
 #define 	FILE_CHECK_START		1
 #define 	FILE_CHECK_RUNNING		2
+#define 	FILE_CHECK_WAIT_M27		3
 
-    switch(file_check_state)
-    {
-	case FILE_CHECK_IDLE:
-	    break;
-	case FILE_CHECK_START:
-	    file_check_is_ok = false;
-	    file_check_startindex = card.getIndex();
-	    Serial.println("adenin: Start Filecheck.");
-	    file_check_state = FILE_CHECK_RUNNING;
-	    // do not break here! fall through to the next state (FILE_CHECK_RUNNING)!
-	case FILE_CHECK_RUNNING:
-	    if(card.sdprinting && !card.sdispaused)
-	    {
-		for(uint16_t cnt = 0; cnt < 512; cnt++)
-		{
-		    int16_t n=card.get();
-
-		    if(n < 0)
-		    {
-			file_check_state = FILE_CHECK_IDLE;
-			if(card.eof())
+	switch(file_check_state)
+	{
+		case FILE_CHECK_IDLE:
+			break;
+		case FILE_CHECK_START:
+			file_check_is_ok = false;
+			file_check_startindex = card.getIndex();
+			Serial.println("adenin: Start Filecheck.");
+			file_check_state = FILE_CHECK_RUNNING;
+			// do not break here! fall through to the next state (FILE_CHECK_RUNNING)!
+		case FILE_CHECK_RUNNING:
+			if(card.sdprinting && !card.sdispaused)
 			{
-			    file_check_is_ok = true;
-			    card.setIndex(file_check_startindex);
-			    Serial.println("adenin: Filecheck ok");
-			    return;
+				for(uint16_t cnt = 0; cnt < 512; cnt++)
+				{
+					int16_t n=card.get();
+					if(n < 0)
+					{
+						if(card.eof())
+						{
+							file_check_state = FILE_CHECK_WAIT_M27;
+							file_check_wait_M27 = 2;
+							file_check_is_ok = true;
+							card.setIndex(file_check_startindex);
+							Serial.println("adenin: Filecheck ok");
+							return;
+						}
+						else
+						{
+							file_check_state = FILE_CHECK_IDLE;
+							file_check_is_ok = false;
+							card.setIndex(0);
+							Serial.println("adenin: Error Filecheck.");
+							display_ChangeForm( FORM_ERROR_SCREEN, 0);
+							display.WriteStr(STRING_ERROR_MESSAGE,"ERROR: Can't read File");//Printing form
+							gif_processing_state = PROCESSING_ERROR;
+							card.printingHasFinished();
+							SERIAL_PROTOCOLLNPGM(MSG_SD_NOT_PRINTING);
+							screen_sdcard = true;
+							return;
+						}
+					}
+				}
 			}
 			else
 			{
-			    file_check_is_ok = false;
-			    card.setIndex(0);
-			    Serial.println("adenin: Error Filecheck.");
-			    display_ChangeForm( FORM_ERROR_SCREEN, 0);
-			    display.WriteStr(STRING_ERROR_MESSAGE,"ERROR: Can't read File");//Printing form
-			    gif_processing_state = PROCESSING_ERROR;
-			    card.printingHasFinished();
-			    SERIAL_PROTOCOLLNPGM(MSG_SD_NOT_PRINTING);
-			    screen_sdcard = true;
-			    return;
+				if(!card.sdispaused)
+				{
+					Serial.println("adenin: file check canceled");
+					file_check_state = FILE_CHECK_IDLE;
+				}
 			}
-		    }
-		}
-	    }
-	    else
-	    {
-		if(!card.sdispaused)
-		{
-		    Serial.println("adenin: file check canceled");
-		    file_check_state = FILE_CHECK_IDLE;
-		}
-	    }
-	    break;
-	default:
-	    file_check_state = FILE_CHECK_IDLE;
-	    break;
-    }
+			break;
+		case FILE_CHECK_WAIT_M27:
+			if(file_check_wait_M27)
+				return;
+			file_check_state = FILE_CHECK_IDLE;
+			break;
+		default:
+			file_check_state = FILE_CHECK_IDLE;
+			break;
+	}
 
 	if(!card.sdprinting || serial_count!=0){ //Detects if printer is paused
 		#ifdef SIGMA_TOUCH_SCREEN
@@ -4798,101 +4806,123 @@ inline void gcode_M23(){
 }
 inline void gcode_M24(){
 	#ifdef SDSUPPORT
-	file_check_state = FILE_CHECK_START;
-	card.startFileprint();
-	starttime=millis();
-	#ifdef ENABLE_CURA_COUNTDOWN_TIMER
-	flag_is_cura_file = false;
-	#endif
-	Flag_checkfil = false;
-	Flag_fanSpeed_mirror=0;
-	extrudemultiply=100;
-	hotend0_relative_temp = 0;
-	hotend1_relative_temp = 0;
-	setTargetBed(0);
-	setTargetHotend0(0);
-	setTargetHotend1(0);
-	feedmultiply[LEFT_EXTRUDER]=100;
-	feedmultiply[RIGHT_EXTRUDER]=100;
-	fanSpeed_offset[LEFT_EXTRUDER]=0;
-	fanSpeed_offset[RIGHT_EXTRUDER]=0;
-	extruder_multiply[LEFT_EXTRUDER]=100;
-	extruder_multiply[RIGHT_EXTRUDER]=100;
-	fanSpeed = 0;
-	raft_line = 0;
-	raft_line_counter = 0;
-	raft_line_counter_g = 0;
-	raft_extrusion_adjusting = 1.0;
-	Flag_raft_last_line = false;
-	x0mmdone = 0;
-	x1mmdone = 0;
-	ymmdone = 0;
-	e0mmdone = 0;
-	e1mmdone = 0;
-	log_prints++;
-	log_min_print = 0;
-	saved_print_flag = 888;
-	acceleration_old = acceleration;
-	screen_sdcard = false;
-	Config_StoreSettings();
-	//gcode_T0_T1_auto(0);
-	//st_synchronize();
-	screen_printing_pause_form = screen_printing_pause_form0;
-	#ifdef SIGMA_TOUCH_SCREEN
-	display_ButtonState(BUTTON_SDPRINTING_PAUSE,0);
-	is_on_printing_screen=true;//We are entering printing screen
-	display_ChangeForm(FORM_SDPRINTING,0);
-	bitSet(flag_sdprinting_register,flag_sdprinting_register_datarefresh);
-	
-	//char buffer[13];
-	
-	int count = get_nummaxchars(true, 280);
-	int i = 0;	
-	memset(namefilegcode, '\0', sizeof(namefilegcode) );
-	
-	if ((String(card.longFilename).length() - 6) > count){
-		for (i = 0; i<count ; i++)
-		{
-			
-			namefilegcode[i]=card.longFilename[i];
-			
-		}
-		namefilegcode[i]='.';
-		namefilegcode[i+1]='.';
-		namefilegcode[i+2]='.';
-		namefilegcode[i+3]='\0';
-		
-	}else{
-		
-		for (i = 0; i < String(card.longFilename).length() - 6; i++)
-		{
-			namefilegcode[i]=card.longFilename[i];
-		}
-		
-		
+	if(card.sdispaused && screen_printing_pause_form == screen_printing_pause_form1)		//resume from pause
+	{
+		bitSet(flag_sdprinting_register,flag_sdprinting_register_printresume);				//start
 	}
-	
-	
-	
-	display.WriteStr(STRING_SDPRINTING_GCODE,namefilegcode);//Printing form//Printing form
-	#endif
+	else																					//start a new print
+	{
+		file_check_state = FILE_CHECK_START;
+		card.startFileprint();
+		starttime=millis();
+		#ifdef ENABLE_CURA_COUNTDOWN_TIMER
+		flag_is_cura_file = false;
+		#endif
+		Flag_checkfil = false;
+		Flag_fanSpeed_mirror=0;
+		extrudemultiply=100;
+		hotend0_relative_temp = 0;
+		hotend1_relative_temp = 0;
+		setTargetBed(0);
+		setTargetHotend0(0);
+		setTargetHotend1(0);
+		feedmultiply[LEFT_EXTRUDER]=100;
+		feedmultiply[RIGHT_EXTRUDER]=100;
+		fanSpeed_offset[LEFT_EXTRUDER]=0;
+		fanSpeed_offset[RIGHT_EXTRUDER]=0;
+		extruder_multiply[LEFT_EXTRUDER]=100;
+		extruder_multiply[RIGHT_EXTRUDER]=100;
+		fanSpeed = 0;
+		raft_line = 0;
+		raft_line_counter = 0;
+		raft_line_counter_g = 0;
+		raft_extrusion_adjusting = 1.0;
+		Flag_raft_last_line = false;
+		x0mmdone = 0;
+		x1mmdone = 0;
+		ymmdone = 0;
+		e0mmdone = 0;
+		e1mmdone = 0;
+		log_prints++;
+		log_min_print = 0;
+		saved_print_flag = 888;
+		acceleration_old = acceleration;
+		screen_sdcard = false;
+		Config_StoreSettings();
+		//gcode_T0_T1_auto(0);
+		//st_synchronize();
+		screen_printing_pause_form = screen_printing_pause_form0;
+		#ifdef SIGMA_TOUCH_SCREEN
+		display_ButtonState(BUTTON_SDPRINTING_PAUSE,0);
+		is_on_printing_screen=true;//We are entering printing screen
+		display_ChangeForm(FORM_SDPRINTING,0);
+		bitSet(flag_sdprinting_register,flag_sdprinting_register_datarefresh);
+		
+		//char buffer[13];
+		
+		int count = get_nummaxchars(true, 280);
+		int i = 0;	
+		memset(namefilegcode, '\0', sizeof(namefilegcode) );
+		
+		if ((String(card.longFilename).length() - 6) > count){
+			for (i = 0; i<count ; i++)
+			{
+				
+				namefilegcode[i]=card.longFilename[i];
+				
+			}
+			namefilegcode[i]='.';
+			namefilegcode[i+1]='.';
+			namefilegcode[i+2]='.';
+			namefilegcode[i+3]='\0';
+			
+		}else{
+			
+			for (i = 0; i < String(card.longFilename).length() - 6; i++)
+			{
+				namefilegcode[i]=card.longFilename[i];
+			}
+			
+			
+		}
+		
+		
+		
+		display.WriteStr(STRING_SDPRINTING_GCODE,namefilegcode);//Printing form//Printing form
+		#endif
+	}
 	#endif //SDSUPPORT
 }
 inline void gcode_M25(){
 	#ifdef SDSUPPORT
+	if(card.sdprinting && screen_printing_pause_form == screen_printing_pause_form0)
+	{
+		bitSet(flag_sdprinting_register,flag_sdprinting_register_printpause);	
+	}
+/*
 	card.pauseSDPrint();
+	display_ChangeForm(FORM_SDPRINTING_PAUSE,0);
+	screen_printing_pause_form = screen_printing_pause_form1;
+	display.WriteStr(STRING_SDPRINTING_PAUSE_GCODE,namefilegcode);
+	bitSet(flag_sdprinting_register,flag_sdprinting_register_datarefresh);
+	bitSet(flag_sdprinting_register,flag_sdprinting_register_pausetest);
+*/
 	#endif //SDSUPPORT
 }
 inline void gcode_M26(){
 	#ifdef SDSUPPORT
 	if(card.cardOK && code_seen('S')) {
 		card.setIndex(code_value_long());
+		if(code_value_long() == 0)
+			card.sdispaused = false;
 	}
 	#endif //SDSUPPORT
 }
 inline void gcode_M27(){
 	#ifdef SDSUPPORT
 	card.getStatus();
+	if(file_check_wait_M27)
+		file_check_wait_M27--;
 	#endif //SDSUPPORT
 }
 inline void gcode_M28(){

@@ -47,7 +47,7 @@ Author: Alejandro Garcia (S3mt0x)
 #define flag_sdprinting_register_pausetest				13
 
 
-//// flag_sdprinting_register/////
+//// flag_utilities_filament_register/////
 #define flag_utilities_filament_register_home				0
 #define flag_utilities_filament_register_acceptok			1
 #define flag_utilities_filament_register_purgeselect0		2
@@ -61,7 +61,7 @@ Author: Alejandro Garcia (S3mt0x)
 #define flag_utilities_calibration_register_calibbeddone				2
 #define flag_utilities_calibration_register_bedcomensationmode			3
 
-//// flag_sdprinting_register/////
+//// flag_sdlist_resgiter/////
 #define flag_sdlist_resgiter_filesupdown					0
 #define flag_sdlist_resgiter_select0						1
 #define flag_sdlist_resgiter_select1						2
