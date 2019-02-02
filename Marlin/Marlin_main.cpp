@@ -1621,6 +1621,20 @@ void get_command()
 					int16_t n=card.get();
 					if(n < 0)
 					{
+						if(!card.isFileOpen())
+						{
+							file_check_state = FILE_CHECK_IDLE;
+							file_check_is_ok = false;
+							card.setIndex(0);
+							Serial.println("adenin: Error file ist closed.");
+							display_ChangeForm( FORM_ERROR_SCREEN, 0);
+							display.WriteStr(STRING_ERROR_MESSAGE,"ERROR: File is closed");//Printing form
+							gif_processing_state = PROCESSING_ERROR;
+							card.printingHasFinished();
+							SERIAL_PROTOCOLLNPGM(MSG_SD_NOT_PRINTING);
+							screen_sdcard = true;
+							return;
+						}
 						if(card.eof())
 						{
 							file_check_state = FILE_CHECK_WAIT_M27;
@@ -1673,7 +1687,8 @@ void get_command()
 		
 			
 			//*********PAUSE POSITION AND RESUME POSITION IN PROBES
-			if (bitRead(flag_sdprinting_register,flag_sdprinting_register_pausepause) && !bitRead(flag_sdprinting_register,flag_sdprinting_register_pauseresume)){				
+			if (bitRead(flag_sdprinting_register,flag_sdprinting_register_pausepause) && !bitRead(flag_sdprinting_register,flag_sdprinting_register_pauseresume))
+			{
 				enquecommand_P(PSTR("G69"));
 				bitClear(flag_sdprinting_register,flag_sdprinting_register_pausepause);
 				gif_processing_state = PROCESSING_DEFAULT;
@@ -4897,24 +4912,19 @@ inline void gcode_M25(){
 	#ifdef SDSUPPORT
 	if(card.sdprinting && screen_printing_pause_form == screen_printing_pause_form0)
 	{
-		bitSet(flag_sdprinting_register,flag_sdprinting_register_printpause);	
+		bitSet(flag_sdprinting_register,flag_sdprinting_register_printpause);
 	}
-/*
-	card.pauseSDPrint();
-	display_ChangeForm(FORM_SDPRINTING_PAUSE,0);
-	screen_printing_pause_form = screen_printing_pause_form1;
-	display.WriteStr(STRING_SDPRINTING_PAUSE_GCODE,namefilegcode);
-	bitSet(flag_sdprinting_register,flag_sdprinting_register_datarefresh);
-	bitSet(flag_sdprinting_register,flag_sdprinting_register_pausetest);
-*/
+	else
+	if(card.sdispaused && screen_printing_pause_form == screen_printing_pause_form1)
+	{
+		bitSet(flag_sdprinting_register,flag_sdprinting_register_printstop);
+	}
 	#endif //SDSUPPORT
 }
 inline void gcode_M26(){
 	#ifdef SDSUPPORT
 	if(card.cardOK && code_seen('S')) {
 		card.setIndex(code_value_long());
-		if(code_value_long() == 0)
-			card.sdispaused = false;
 	}
 	#endif //SDSUPPORT
 }

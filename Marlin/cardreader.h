@@ -59,8 +59,8 @@ public:
 public:
   bool saving;
   bool logging;
-  bool sdprinting ; 
-  bool sdispaused; 
+  bool sdprinting ;
+  bool sdispaused;
   bool cardOK ;
   char filename[13];
   char longFilename[LONG_FILENAME_LENGTH];

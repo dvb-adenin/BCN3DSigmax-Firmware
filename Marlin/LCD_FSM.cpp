@@ -491,7 +491,7 @@ void lcd_fsm_lcd_input_logic(){//We process tasks according to the lcd imputs
 			
 			if(card.sdprinting && screen_printing_pause_form == screen_printing_pause_form0){
 				
-				bitSet(flag_sdprinting_register,flag_sdprinting_register_printpause);	
+				bitSet(flag_sdprinting_register,flag_sdprinting_register_printpause);
 				
 			}else if(screen_printing_pause_form == screen_printing_pause_form3){
 				bitSet(flag_sdprinting_register,flag_sdprinting_register_control);
@@ -5392,7 +5392,6 @@ void update_screen_printing(){
 	if(bitRead(flag_sdprinting_register,flag_sdprinting_register_printpause)){
 		if(!waiting_temps){
 			card.pauseSDPrint();
-			SERIAL_PROTOCOLLNPGM("PAUSE");
 			bitSet(flag_sdprinting_register,flag_sdprinting_register_pausepause);
 		}
 		bitClear(flag_sdprinting_register,flag_sdprinting_register_printpause);
@@ -5470,6 +5469,15 @@ void update_screen_printing(){
 		screen_sdcard = false;
 		surfing_utilities=false;
 		surfing_temps = false;
+
+//HACK to trigger OctoPrint to changing monitoring state from "Paused" to "Printing from SD"
+//and changing monitoring state from "Printing from SD" to "Cancelling"
+		if(card.sdispaused && !card.isFileOpen())
+		{
+			SERIAL_PROTOCOLPGM(MSG_SD_PRINTING_BYTE);
+			SERIAL_PROTOCOLLNPGM("1/2");
+		}
+
 		card.sdprinting = false;
 		card.sdispaused = false;
 		Flag_checkfil = false;

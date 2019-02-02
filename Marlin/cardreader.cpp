@@ -515,32 +515,33 @@ void CardReader::removeFile(char* name)
 
 void CardReader::getStatus()
 {
-	if(cardOK)
+	static char send_pause=0;
+	if(cardOK && (sdprinting || sdispaused))
 	{
 		if(sdprinting)
 		{
 			SERIAL_PROTOCOLPGM(MSG_SD_PRINTING_BYTE);
-			SERIAL_PROTOCOL(sdpos);
-			SERIAL_PROTOCOLPGM("/");
-			SERIAL_PROTOCOLLN(filesize);
+			send_pause = 2;
 		}
 		else
 		{
-			if(sdispaused)
+			if(send_pause)
 			{
 				SERIAL_PROTOCOLLNPGM("PAUSE");
+				send_pause--;
 			}
-			else
-			{
-				SERIAL_PROTOCOLLNPGM(MSG_SD_NOT_PRINTING);
-			}
+			SERIAL_PROTOCOLPGM("Pause at ");
 		}
+		SERIAL_PROTOCOL(sdpos);
+		SERIAL_PROTOCOLPGM("/");
+		SERIAL_PROTOCOLLN(filesize);
 	}
 	else
 	{
 		SERIAL_PROTOCOLLNPGM(MSG_SD_NOT_PRINTING);
 	}
 }
+
 void CardReader::write_command(char *buf)
 {
 	char* begin = buf;
