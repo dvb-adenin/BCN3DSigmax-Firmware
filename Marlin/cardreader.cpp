@@ -12,6 +12,7 @@ Author: Alejandro Garcia (S3mt0x)
 #include "language.h"
 #include "Touch_Screen_Definitions.h"
 #include "SD_ListFiles.h"
+#include "LCD_FSM.h"
 #ifdef SDSUPPORT
 
 
@@ -63,17 +64,17 @@ void CardReader::lsDive(const char *prepend, SdFile parent, const char * const m
 	uint8_t cnt = 0;
 
 	// Read the next entry from a directory
-	while (parent.readDir(p, longFilename) > 0) {
-
+	while (parent.readDir(p, longFilename) > 0)
+	{
 		// If the entry is a directory and the action is LS_SerialPrint
-		if (DIR_IS_SUBDIR(&p) && lsAction != LS_Count && lsAction != LS_GetFilename) {
-
+		if (DIR_IS_SUBDIR(&p) && lsAction != LS_Count && lsAction != LS_GetFilename)
+		{
 			// Get the short name for the item, which we know is a folder
 			char lfilename[13];
 			createFilename(lfilename, p);
 
 			// Allocate enough stack space for the full path to a folder, trailing slash, and nul
-			boolean prepend_is_empty = (prepend[0] == '\0');
+			boolean prepend_is_empty = (!prepend || prepend[0] == '\0');
 			int len = (prepend_is_empty ? 1 : strlen(prepend)) + strlen(lfilename) + 1 + 1;
 			char path[len];
 
@@ -89,8 +90,10 @@ void CardReader::lsDive(const char *prepend, SdFile parent, const char * const m
 			// Get a new directory object using the full path
 			// and dive recursively into it.
 			SdFile dir;
-			if (!dir.open(parent, lfilename, O_READ)) {
-				if (lsAction == LS_SerialPrint) {
+			if (!dir.open(parent, lfilename, O_READ))
+			{
+				if (lsAction == LS_SerialPrint)
+				{
 					SERIAL_ECHO_START;
 					SERIAL_ECHOLN(MSG_SD_CANT_OPEN_SUBDIR);
 					SERIAL_ECHOLN(lfilename);
@@ -99,7 +102,8 @@ void CardReader::lsDive(const char *prepend, SdFile parent, const char * const m
 			lsDive(path, dir);
 			// close() is done automatically by destructor of SdFile
 		}
-		else {
+		else
+		{
 			uint8_t pn0 = p.name[0];
 			if (pn0 == DIR_NAME_FREE) break;
 			if (pn0 == DIR_NAME_DELETED || pn0 == '.') continue;
@@ -111,25 +115,30 @@ void CardReader::lsDive(const char *prepend, SdFile parent, const char * const m
 
 			if (!filenameIsDir && (p.name[8] != 'G' || p.name[9] == '~')) continue;
 
-			switch (lsAction) {
+			switch (lsAction)
+			{
 				case LS_Count:
-				nrFiles++;
-				break;
+					nrFiles++;
+					break;
 				case LS_SerialPrint:
-				createFilename(filename, p);
-				SERIAL_PROTOCOL(prepend);
-				SERIAL_PROTOCOLLN(filename);
-				break;
+					createFilename(filename, p);
+					SERIAL_PROTOCOL(prepend);
+					SERIAL_PROTOCOLLN(filename);
+					break;
 				case LS_GetFilename:
-				createFilename(filename, p);
-				if (match != NULL) {
-					if (strcasecmp(match, filename) == 0) return;
-				}
-				else if (cnt == nrFiles) return;
-				cnt++;
-				break;
+					createFilename(filename, p);
+					if (match != NULL)
+					{
+						if (strcasecmp(match, filename) == 0) return;
+					}
+					else
+					{
+						if (cnt == nrFiles)
+							return;
+					}
+					cnt++;
+					break;
 			}
-
 		}
 	} // while readDir
 }
@@ -137,7 +146,6 @@ void CardReader::lsDive(const char *prepend, SdFile parent, const char * const m
 void CardReader::ls()
 {
 	lsAction=LS_SerialPrint;
-
 	root.rewind();
 	lsDive("",root);
 }
@@ -523,12 +531,17 @@ void CardReader::getStatus()
 		}
 		else
 		{
-			if(send_pause)
+			if(!bitRead(flag_sdprinting_register,flag_sdprinting_register_supress_m25_pause))
 			{
-				SERIAL_PROTOCOLLNPGM("PAUSE");
-				send_pause--;
+				if(send_pause)
+				{
+					SERIAL_PROTOCOLLNPGM("PAUSE");
+					send_pause--;
+				}
+				SERIAL_PROTOCOLPGM("Pause at ");
 			}
-			SERIAL_PROTOCOLPGM("Pause at ");
+			else
+				SERIAL_PROTOCOLPGM(MSG_SD_PRINTING_BYTE);
 		}
 		SERIAL_PROTOCOL(sdpos);
 		SERIAL_PROTOCOLPGM("/");
@@ -770,12 +783,7 @@ uint32_t CardReader::getFileSize()
 {
 	if(isFileOpen())
 		return filesize;
-	else
-	{
-		if(filesize)						//adenin: Es wird erwartet, das filesize zu diesem Zeitpunkt 0 ist!
-			SERIAL_PROTOCOLLN("-->AE2");	//adenin error
-		return 0;
-	}
+	return 0;
 }
 
 
@@ -783,12 +791,7 @@ uint32_t CardReader::getSdPosition()
 {
 	if(isFileOpen())
 		return sdpos;
-	else
-	{
-		if(sdpos)						//adenin: Es wird erwartet, das sdpos zu diesem Zeitpunkt 0 ist!
-			SERIAL_PROTOCOLLN("-->AE1");	//adenin error
-		return 0;
-	}
+	return 0;
 }
 
 

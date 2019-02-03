@@ -4913,6 +4913,7 @@ inline void gcode_M25(){
 	if(card.sdprinting && screen_printing_pause_form == screen_printing_pause_form0)
 	{
 		bitSet(flag_sdprinting_register,flag_sdprinting_register_printpause);
+		bitSet(flag_sdprinting_register,flag_sdprinting_register_supress_m25_pause);
 	}
 	else
 	if(card.sdispaused && screen_printing_pause_form == screen_printing_pause_form1)
@@ -4923,8 +4924,13 @@ inline void gcode_M25(){
 }
 inline void gcode_M26(){
 	#ifdef SDSUPPORT
-	if(card.cardOK && code_seen('S')) {
+	if(card.cardOK && code_seen('S'))
+	{
 		card.setIndex(code_value_long());
+		if(code_value_long() == 0)
+		{
+			card.sdispaused = false;
+		}
 	}
 	#endif //SDSUPPORT
 }
@@ -4933,6 +4939,7 @@ inline void gcode_M27(){
 	card.getStatus();
 	if(file_check_wait_M27)
 		file_check_wait_M27--;
+	bitClear(flag_sdprinting_register,flag_sdprinting_register_supress_m25_pause);
 	#endif //SDSUPPORT
 }
 inline void gcode_M28(){

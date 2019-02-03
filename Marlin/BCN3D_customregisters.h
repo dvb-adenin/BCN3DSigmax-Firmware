@@ -45,6 +45,7 @@ Author: Alejandro Garcia (S3mt0x)
 #define flag_sdprinting_register_datarefresh			11
 #define flag_sdprinting_register_light					12
 #define flag_sdprinting_register_pausetest				13
+#define flag_sdprinting_register_supress_m25_pause		14
 
 
 //// flag_utilities_filament_register/////
