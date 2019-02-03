@@ -73,6 +73,8 @@ Author: Alejandro Garcia (S3mt0x)
 #define screen_printing_pause_form3		'D'
 
 
+#define DEBUGSERIAL Serial1
+
 #define SERIAL_CHAR(x) ((void)MYSERIAL.write(x))
 #define SERIAL_EOL() SERIAL_CHAR('\n')
 

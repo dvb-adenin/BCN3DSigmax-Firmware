@@ -93,6 +93,8 @@ dir_t* SdBaseFile::cacheDirEntry(uint8_t action) {
 bool SdBaseFile::close() {
   bool rtn = sync();
   type_ = FAT_FILE_TYPE_CLOSED;
+  curCluster_ = 0;
+  curPosition_ = 0;
   return rtn;
 }
 //------------------------------------------------------------------------------

@@ -178,50 +178,77 @@ asm volatile ( \
 // Check for any bytes inside the stepper interrupt routine:
 void display_check_rx (void) {
 	// We are in this interrupt for a long time, so check for any serial characters from the display:
-	#ifdef SIGMA_TOUCH_SCREEN
 	#pragma message "Hardware Serial must not have any protected variables or this will not work! Modify HardwareSerial.h to be public!"
 	// Check if there is a byte in the serial receive register, when _udr is read the interrupt is cleared:
-	if (bit_is_set(*MYSERIAL_SCREEN._ucsra, 7)) {
-		if (bit_is_clear(*MYSERIAL_SCREEN._ucsra, UPE0)) {
+	unsigned char c;
+	unsigned char flags;
 
+	#ifdef SIGMA_TOUCH_SCREEN
+	flags = *MYSERIAL_SCREEN._ucsra;
+	if(flags & (1<<RXC0))
+	{
+		unsigned char c = *MYSERIAL_SCREEN._udr;
+		if (!(flags & ((1<<UPE0)|(1<<FE0)|(1<<DOR0))))
+		{
 			// No Parity error, read byte and store it in the buffer if there is room
-			unsigned char c = *MYSERIAL_SCREEN._udr;
-			rx_buffer_index_t i = (unsigned int)(MYSERIAL_SCREEN._rx_buffer_head + 1) % SERIAL_RX_BUFFER_SIZE;
+			rx_buffer_index_t i = (unsigned int)(MYSERIAL_SCREEN._rx_buffer_head + 1) & (SERIAL_RX_BUFFER_SIZE - 1);
 
 			// if we should be storing the received character into the location
 			// just before the tail (meaning that the head would advance to the
 			// current location of the tail), we're about to overflow the buffer
 			// and so we don't write the character or advance the head.
-			if (i != MYSERIAL_SCREEN._rx_buffer_tail) {
+			if (i != MYSERIAL_SCREEN._rx_buffer_tail)
+			{
 				MYSERIAL_SCREEN._rx_buffer[MYSERIAL_SCREEN._rx_buffer_head] = c;
 				MYSERIAL_SCREEN._rx_buffer_head = i;
 			}
-			} else {
-			// Parity error, read byte but discard it
-			*MYSERIAL_SCREEN._udr;
-		}
-	}
-	if (bit_is_set(*MYSERIAL._ucsra, 7)) {
-		if (bit_is_clear(*MYSERIAL._ucsra, UPE0)) {
-
-			// No Parity error, read byte and store it in the buffer if there is room
-			unsigned char c = *MYSERIAL._udr;
-			rx_buffer_index_t i = (unsigned int)(MYSERIAL._rx_buffer_head + 1) % SERIAL_RX_BUFFER_SIZE;
-
-			// if we should be storing the received character into the location
-			// just before the tail (meaning that the head would advance to the
-			// current location of the tail), we're about to overflow the buffer
-			// and so we don't write the character or advance the head.
-			if (i != MYSERIAL._rx_buffer_tail) {
-				MYSERIAL._rx_buffer[MYSERIAL._rx_buffer_head] = c;
-				MYSERIAL._rx_buffer_head = i;
-			}
-			} else {
-			// Parity error, read byte but discard it
-			*MYSERIAL._udr;
 		}
 	}
 	#endif
+
+	flags = *MYSERIAL._ucsra;
+	if(flags & (1<<RXC0))
+	{
+		c = *MYSERIAL._udr;
+		rx_buffer_index_t i = (MYSERIAL._rx_buffer_head + 1) & (SERIAL_RX_BUFFER_SIZE -1);
+
+		if (flags & ((1<<UPE0)|(1<<FE0)|(1<<DOR0)))
+		{
+			c = 0x0A;
+		}
+
+		if (i != MYSERIAL._rx_buffer_tail)
+		{
+			MYSERIAL._rx_buffer[MYSERIAL._rx_buffer_head] = c;
+			MYSERIAL._rx_buffer_head = i;
+		}
+		else
+		{
+			MYSERIAL._rx_buffer[ (MYSERIAL._rx_buffer_head - 1) & (SERIAL_RX_BUFFER_SIZE -1) ] = 0x0A;
+		}
+
+		flags = *MYSERIAL._ucsra;
+		if(flags & (1<<RXC0))
+		{
+			c = *MYSERIAL._udr;
+			i = (MYSERIAL._rx_buffer_head + 1) & (SERIAL_RX_BUFFER_SIZE -1);
+
+			if (flags & ((1<<UPE0)|(1<<FE0)|(1<<DOR0)))
+			{
+				c = 0x0A;
+			}
+
+			if (i != MYSERIAL._rx_buffer_tail)
+			{
+				MYSERIAL._rx_buffer[MYSERIAL._rx_buffer_head] = c;
+				MYSERIAL._rx_buffer_head = i;
+			}
+			else
+			{
+				MYSERIAL._rx_buffer[ (MYSERIAL._rx_buffer_head - 1) & (SERIAL_RX_BUFFER_SIZE -1) ] = 0x0A;
+			}
+		}
+	}
 }
 #endif
 

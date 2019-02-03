@@ -47,20 +47,20 @@ public:
   int chdir(const char * relpath);
   int updir();
   void setroot();
-  FORCE_INLINE bool isEndFile() { if(filesize > file.curPosition()) return 0; else return 1;}
+  FORCE_INLINE bool isEndFile() { return (!(filesize > file.curPosition()));};
   FORCE_INLINE void sdfinalline() {file.seekEnd(); file.seekSet(file.curPosition()-300);};    ////Go to the end for Simplify extraction	
   FORCE_INLINE bool isFileOpen() { return file.isOpen(); }
   FORCE_INLINE bool eof() { return sdpos>=filesize ;};
   FORCE_INLINE int16_t get() {  sdpos = file.curPosition();return (int16_t)file.read();};
-  FORCE_INLINE uint32_t getIndex() {return sdpos;};
-  FORCE_INLINE void setIndex(long index) {sdpos = index;file.seekSet(index);};
+  FORCE_INLINE uint32_t getIndex() {return file.curPosition();};
+  FORCE_INLINE void setIndex(long index) {if(file.seekSet(index)) sdpos = index; else sdpos = 0;};
   FORCE_INLINE uint8_t percentDone(){if(!isFileOpen()) return 0; if(filesize) return sdpos/((filesize+99)/100); else return 0;};
   FORCE_INLINE char* getWorkDirName(){workDir.getFilename(filename);return filename;};
 public:
   bool saving;
   bool logging;
-  bool sdprinting ; 
-  bool sdispaused; 
+  bool sdprinting ;
+  bool sdispaused;
   bool cardOK ;
   char filename[13];
   char longFilename[LONG_FILENAME_LENGTH];

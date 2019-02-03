@@ -207,6 +207,28 @@ void lcd_fsm_lcd_input_logic(){//We process tasks according to the lcd imputs
 	#endif
 	static uint32_t waitPeriod = millis();
 	static uint32_t waitPeriod_s = millis();
+//>>>>
+	if (card.sdprinting)
+	{
+		DEBUGSERIAL.write("A");
+	}
+	else
+	{
+		DEBUGSERIAL.write("a");
+	}
+	if (card.sdispaused)
+	{
+		DEBUGSERIAL.write("B");
+	}
+	else
+	{
+		DEBUGSERIAL.write("b");
+	}
+
+	char b[16];
+	sprintf_P(b, PSTR("-->%04x "), flag_sdprinting_register);
+	DEBUGSERIAL.println(b);
+//<<<<
 	if (card.sdprinting || card.sdispaused){
 		
 		//******PRINTING****
@@ -245,32 +267,37 @@ void lcd_fsm_lcd_input_logic(){//We process tasks according to the lcd imputs
 			
 			
 			case BUTTON_SDPRINTING_PAUSE_UTILITIES:
-			if(screen_printing_pause_form == screen_printing_pause_form1){
-				screen_printing_pause_form = screen_printing_pause_form2;
-				display.WriteObject(GENIE_OBJ_USERIMAGES,USERIMAGE_SDPRINTING_PAUSE,1);
-				display_ButtonState(BUTTON_SDPRINTING_PAUSE_STOP,1);
-				display_ButtonState(BUTTON_SDPRINTING_PAUSE_RESUME,1);
-				display_ButtonState(BUTTON_SDPRINTING_PAUSE_UTILITIES,1);
-				display_ButtonState( BUTTON_SDPRINTING_PAUSE_BACKSTATE, 1);
-			}else if(screen_printing_pause_form == screen_printing_pause_form2){
-				is_purging_filament = true;
-				display_ButtonState(BUTTON_UTILITIES_FILAMENT_PURGE_LOAD,0);
-				display_ButtonState(BUTTON_UTILITIES_FILAMENT_PURGE_UNLOAD,0);
-				display_ButtonState(BUTTON_UTILITIES_FILAMENT_PURGE_TEMPUP,0);
-				display_ButtonState(BUTTON_UTILITIES_FILAMENT_PURGE_TEMPDOWN,0);
-				display_ButtonState(BUTTON_UTILITIES_FILAMENT_PURGE_MENU,1);
-				display_ChangeForm(FORM_UTILITIES_FILAMENT_PURGE,0);
-				surfing_utilities = true;
-				purge_extruder_selected = -1;
-				display_ButtonState(BUTTON_UTILITIES_FILAMENT_PURGE_SELECT0,0);
-				display_ButtonState(BUTTON_UTILITIES_FILAMENT_PURGE_SELECT1,0);
-				display.WriteObject(GENIE_OBJ_CUSTOM_DIGITS,CUSTOMDIGITS_UTILITIES_FILAMENT_PURGE_LEFTTARGET,int(degHotend(0)));
-				display.WriteObject(GENIE_OBJ_CUSTOM_DIGITS,CUSTOMDIGITS_UTILITIES_FILAMENT_PURGE_RIGHTTARGET,int(degHotend(1)));
-				display.WriteObject(GENIE_OBJ_CUSTOM_DIGITS,CUSTOMDIGITS_UTILITIES_FILAMENT_PURGE_SELECTEDTEMP,0);
-				
-				is_on_printing_screen = false;
-			}
-					
+				if(screen_printing_pause_form == screen_printing_pause_form1)
+				{
+					screen_printing_pause_form = screen_printing_pause_form2;
+					display.WriteObject(GENIE_OBJ_USERIMAGES,USERIMAGE_SDPRINTING_PAUSE,1);
+					display_ButtonState(BUTTON_SDPRINTING_PAUSE_STOP,1);
+					display_ButtonState(BUTTON_SDPRINTING_PAUSE_RESUME,1);
+					display_ButtonState(BUTTON_SDPRINTING_PAUSE_UTILITIES,1);
+					display_ButtonState( BUTTON_SDPRINTING_PAUSE_BACKSTATE, 1);
+				}
+				else
+				{
+					if(screen_printing_pause_form == screen_printing_pause_form2)
+					{
+						is_purging_filament = true;
+						display_ButtonState(BUTTON_UTILITIES_FILAMENT_PURGE_LOAD,0);
+						display_ButtonState(BUTTON_UTILITIES_FILAMENT_PURGE_UNLOAD,0);
+						display_ButtonState(BUTTON_UTILITIES_FILAMENT_PURGE_TEMPUP,0);
+						display_ButtonState(BUTTON_UTILITIES_FILAMENT_PURGE_TEMPDOWN,0);
+						display_ButtonState(BUTTON_UTILITIES_FILAMENT_PURGE_MENU,1);
+						display_ChangeForm(FORM_UTILITIES_FILAMENT_PURGE,0);
+						surfing_utilities = true;
+						purge_extruder_selected = -1;
+						display_ButtonState(BUTTON_UTILITIES_FILAMENT_PURGE_SELECT0,0);
+						display_ButtonState(BUTTON_UTILITIES_FILAMENT_PURGE_SELECT1,0);
+						display.WriteObject(GENIE_OBJ_CUSTOM_DIGITS,CUSTOMDIGITS_UTILITIES_FILAMENT_PURGE_LEFTTARGET,int(degHotend(0)));
+						display.WriteObject(GENIE_OBJ_CUSTOM_DIGITS,CUSTOMDIGITS_UTILITIES_FILAMENT_PURGE_RIGHTTARGET,int(degHotend(1)));
+						display.WriteObject(GENIE_OBJ_CUSTOM_DIGITS,CUSTOMDIGITS_UTILITIES_FILAMENT_PURGE_SELECTEDTEMP,0);
+						
+						is_on_printing_screen = false;
+					}
+				}
 			break;
 			
 			case BUTTON_PRINTERSETUP_LED_SAVE:
@@ -464,7 +491,7 @@ void lcd_fsm_lcd_input_logic(){//We process tasks according to the lcd imputs
 			
 			if(card.sdprinting && screen_printing_pause_form == screen_printing_pause_form0){
 				
-				bitSet(flag_sdprinting_register,flag_sdprinting_register_printpause);	
+				bitSet(flag_sdprinting_register,flag_sdprinting_register_printpause);
 				
 			}else if(screen_printing_pause_form == screen_printing_pause_form3){
 				bitSet(flag_sdprinting_register,flag_sdprinting_register_control);
@@ -1241,10 +1268,12 @@ void lcd_fsm_lcd_input_logic(){//We process tasks according to the lcd imputs
 			case BUTTON_SDLIST_CONFIRMATION_YES:
 			
 			
-			
+DEBUGSERIAL.write("0");
 			if(card.cardOK)
 			{
+DEBUGSERIAL.write("1");
 				if(!listsd.check_extract_match_hotendsize_print()){
+DEBUGSERIAL.write("2");
 					display_ChangeForm(FORM_SDLIST_CONFIRMATION_MATCHHOTEND, 0);
 					display.WriteObject(GENIE_OBJ_CUSTOM_DIGITS,CUSTOMDIGITS_SDLIST_CONFIRMATION_MATCHHOTEND_P_NOZZLE_SIZE_L_DIGIT1,(int)hotend_size_setup[LEFT_EXTRUDER]);
 					display.WriteObject(GENIE_OBJ_CUSTOM_DIGITS,CUSTOMDIGITS_SDLIST_CONFIRMATION_MATCHHOTEND_P_NOZZLE_SIZE_L_DIGIT2,(int)(hotend_size_setup[LEFT_EXTRUDER]*10)%10);
@@ -1260,7 +1289,9 @@ void lcd_fsm_lcd_input_logic(){//We process tasks according to the lcd imputs
 					
 				}
 				if(listsd.check_extract_ensure_duplication_print()){
+DEBUGSERIAL.write("3");
 					if(abs(extruder_offset[Z_AXIS][RIGHT_EXTRUDER]) > RAFT_Z_THRESHOLD){
+DEBUGSERIAL.write("4");
 						display_ChangeForm(FORM_RAFT_ADVISE, 0);
 						sprintf_P(buffer, PSTR("The first layer printed with the %s hotend"),
 						((extruder_offset[Z_AXIS][RIGHT_EXTRUDER] < 0)?"left":"right"));
@@ -1276,6 +1307,7 @@ void lcd_fsm_lcd_input_logic(){//We process tasks according to the lcd imputs
 					}
 				}
 				if (!card.filenameIsDir){ //If the filename is a gcode we start printing
+DEBUGSERIAL.write("5");
 					card.getfilename(filepointer);
 					char cmd[4 + strlen(card.filename) + 1]; // Room for "M23 ", filename, and null
 					sprintf_P(cmd, PSTR("M23 %s"), card.filename);
@@ -1283,7 +1315,7 @@ void lcd_fsm_lcd_input_logic(){//We process tasks according to the lcd imputs
 					enquecommand(cmd);
 					enquecommand_P(PSTR("M24")); // It also sends you to PRINTING screen
 				}
-				
+DEBUGSERIAL.write("6");
 			}
 			
 			break;
@@ -5049,12 +5081,16 @@ void lcd_fsm_lcd_input_logic(){//We process tasks according to the lcd imputs
 void lcd_fsm_output_logic(){//We process tasks according to the present state
 	if((card.sdprinting && !card.sdispaused) || (!card.sdprinting && card.sdispaused) )
 	{
+		DEBUGSERIAL.println("-->DEB:1");
 		update_screen_printing();//STATE PRINTING
 	}else if(screen_sdcard){
+		DEBUGSERIAL.println("-->DEB:2");
 		update_screen_sdcard();//STATE LIST SDGCODES
 	}else if(flag_ending_gcode){
+		DEBUGSERIAL.println("-->DEB:3");
 		update_screen_endinggcode();//STATE ENDING PRINTING
 	}else{
+		DEBUGSERIAL.println("-->DEB:4");
 		update_screen_noprinting();//STATE NO PRINTING
 	}
 }
@@ -5356,7 +5392,6 @@ void update_screen_printing(){
 	if(bitRead(flag_sdprinting_register,flag_sdprinting_register_printpause)){
 		if(!waiting_temps){
 			card.pauseSDPrint();
-			SERIAL_PROTOCOLLNPGM("PAUSE");
 			bitSet(flag_sdprinting_register,flag_sdprinting_register_pausepause);
 		}
 		bitClear(flag_sdprinting_register,flag_sdprinting_register_printpause);
@@ -5370,14 +5405,17 @@ void update_screen_printing(){
 				SERIAL_PROTOCOLLNPGM("Pause parking");
 		}
 	}*/
-	if(bitRead(flag_sdprinting_register,flag_sdprinting_register_printresume)){
-		if(!waiting_temps){
+	if(bitRead(flag_sdprinting_register,flag_sdprinting_register_printresume))
+	{
+		if(!waiting_temps)
+		{
 			display_ChangeForm(FORM_PROCESSING,0);
 			gif_processing_state = PROCESSING_DEFAULT;
 			card.startFileprint();
 			SERIAL_PROTOCOLLNPGM("RESUME");
 			bitClear(flag_sdprinting_register,flag_sdprinting_register_pauseresume);
-			if(bitRead(flag_sdprinting_register,flag_sdprinting_register_printresume)){
+			if(bitRead(flag_sdprinting_register,flag_sdprinting_register_printresume))
+			{
 				enquecommand_P((PSTR("G70")));
 				bitClear(flag_sdprinting_register,flag_sdprinting_register_printresume);
 			}
@@ -5431,6 +5469,15 @@ void update_screen_printing(){
 		screen_sdcard = false;
 		surfing_utilities=false;
 		surfing_temps = false;
+
+//HACK to trigger OctoPrint to changing monitoring state from "Paused" to "Printing from SD"
+//and changing monitoring state from "Printing from SD" to "Cancelling"
+		if(card.sdispaused && !card.isFileOpen())
+		{
+			SERIAL_PROTOCOLPGM(MSG_SD_PRINTING_BYTE);
+			SERIAL_PROTOCOLLNPGM("1/2");
+		}
+
 		card.sdprinting = false;
 		card.sdispaused = false;
 		Flag_checkfil = false;
@@ -5991,7 +6038,8 @@ void update_screen_noprinting(){
 		HeaterCooldownInactivity(true);
 		gif_processing_state = PROCESSING_SUCCESS;
 	}
-	
+//TODO Aus irgend einem Grund tut ein Pause über OctoPrint flag_sdprinting_register_datarefresh setzen
+	bitClear(flag_sdprinting_register,flag_sdprinting_register_datarefresh);
 }
 void update_screen_sdcard(){
 	static uint32_t waitPeriod_input_button_command = millis();
