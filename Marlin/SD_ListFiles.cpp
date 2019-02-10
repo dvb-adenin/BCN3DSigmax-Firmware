@@ -26,9 +26,9 @@ Listfiles::Listfiles(){
 
 void Listfiles::get_lineduration(bool fromfilepoiter, char* name){
 	if(!fromfilepoiter){
-		card.openFile(name, true);
+		card.openFile(name, true, true, true);
 	}else{
-		card.openFile(card.filename, true);
+		card.openFile(card.filename, true, true ,true);
 	}
 	//card.openFile(card.filename, true);
 	dias=-1, horas=-1, minutos=-1, segundos=-1;
