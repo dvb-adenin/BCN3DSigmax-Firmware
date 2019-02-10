@@ -592,7 +592,7 @@ bool SdBaseFile::open(SdBaseFile* dirFile, const char* path, uint8_t oflag) {
   if (!dirFile) goto fail;
 
   // error if already open
-  if (isOpen()) goto fail;
+  if (isOpen() && !isSubDir()) goto fail;
 
   if (*path == '/') {
     while (*path == '/') path++;
