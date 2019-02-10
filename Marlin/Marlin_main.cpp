@@ -4825,7 +4825,7 @@ inline void gcode_M24(){
 	{
 		bitSet(flag_sdprinting_register,flag_sdprinting_register_printresume);				//start
 	}
-	else																					//start a new print
+	else if(card.isFileOpen())																					//start a new print
 	{
 		file_check_state = FILE_CHECK_START;
 		card.startFileprint();
